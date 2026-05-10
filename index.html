@@ -972,29 +972,39 @@ window.renderCurrent = function(){
 
 $('topDate').textContent=new Date().toLocaleDateString('he-IL',{day:'numeric',month:'long',year:'numeric'});
 
-// Start immediately with local data, then sync Firebase in background
+// הפעלה ראשונית של הממשק
 initDB();
 buildStrip();
 renderMonth();
 
-// Firebase sync in background - non-blocking
+// --- סנכרון Firebase ---
+
 if(window.loadFromFirebase){
-  showSyncStatus('טוען...', false);
+  showSyncStatus('מתחבר...', false);
   window.loadFromFirebase().then(ok=>{
     if(ok){
       showSyncStatus('מסונכרן ✓', true);
       buildStrip();
       renderCurrent();
-      console.log('[FB] initial load success');
     } else {
-      showSyncStatus('לא מחובר', false);
-      console.warn('[FB] no data in Firebase, using local');
+      showSyncStatus('מוכן (מקומי)', true);
     }
   }).catch(e=>{ 
     showSyncStatus('שגיאת חיבור', false);
-    console.error('[FB] boot load error:', e);
   });
 }
+
+// פונקציה ששומרת אוטומטית לענן בכל פעם שאתה לוחץ על כפתור (הוספה/מחיקה/עריכה)
+window.addEventListener('click', function(e) {
+    const isButton = e.target.closest('button') || e.target.closest('.ib') || e.target.closest('.btn-add');
+    if (isButton) {
+        setTimeout(() => {
+            if (typeof saveToFirebase === 'function' && window.DB) {
+                window.saveToFirebase(window.DB);
+            }
+        }, 500);
+    }
+});
 </script>
 </body>
 </html>
