@@ -7,38 +7,35 @@
 <meta name="apple-mobile-web-app-title" content="הוצאות">
 <title>הוצאות משותפות</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
-import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-database.js";
-
-const firebaseConfig = {
+<script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-database-compat.js"></script>
+<script>
+var firebaseConfig = {
   apiKey: "AIzaSyBU4DHsV9p8v9ddwEgdxHVbmj3T3zegZ60",
   authDomain: "spend-eaeac.firebaseapp.com",
   databaseURL: "https://spend-eaeac-default-rtdb.firebaseio.com",
   projectId: "spend-eaeac",
   storageBucket: "spend-eaeac.firebasestorage.app",
   messagingSenderId: "456494120486",
-  appId: "1:456494120486:web:12f1fba1f9284df42c70e7"
+  appId: "1:456494120446:web:12f1fba1f9284df42c70e7"
 };
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const dbRef = ref(db, 'expenses/shared');
-
-let _saving = false;
-let _lastSaveTs = 0;
-let _listenerActive = false;
+firebase.initializeApp(firebaseConfig);
+var _fbDb = firebase.database();
+var _fbRef = _fbDb.ref('expenses/shared');
+var _saving = false;
+var _lastSaveTs = 0;
+var _listenerActive = false;
 
 window.saveToFirebase = function(data) {
   _saving = true;
   _lastSaveTs = Date.now();
-  set(dbRef, { db: JSON.stringify(data), ts: _lastSaveTs })
-    .then(() => {
-      setTimeout(() => { _saving = false; }, 800);
+  _fbRef.set({ db: JSON.stringify(data), ts: _lastSaveTs })
+    .then(function() {
+      setTimeout(function() { _saving = false; }, 800);
       console.log('[FB] saved OK ts:', _lastSaveTs);
       if(typeof showSyncStatus === 'function') showSyncStatus('נשמר ✓', true);
     })
-    .catch(e => {
+    .catch(function(e) {
       _saving = false;
       console.error('[FB] save error:', e.message);
       if(typeof showSyncStatus === 'function') showSyncStatus('שגיאת שמירה ✗', false);
@@ -46,11 +43,11 @@ window.saveToFirebase = function(data) {
 };
 
 window.loadFromFirebase = function() {
-  return new Promise((resolve) => {
+  return new Promise(function(resolve) {
     if(_listenerActive) { resolve(false); return; }
     _listenerActive = true;
-    onValue(dbRef, (snapshot) => {
-      const data = snapshot.val();
+    _fbRef.on('value', function(snapshot) {
+      var data = snapshot.val();
       if(!data || !data.db) { resolve(false); return; }
       if(_saving) return;
       if(data.ts && data.ts <= _lastSaveTs) { resolve(true); return; }
@@ -62,7 +59,7 @@ window.loadFromFirebase = function() {
         if(typeof showSyncStatus === 'function') showSyncStatus('עודכן ✓', true);
       }
       resolve(true);
-    }, (error) => {
+    }, function(error) {
       console.error('[FB] listener error:', error.message);
       if(typeof showSyncStatus === 'function') showSyncStatus('שגיאת חיבור ✗', false);
       resolve(false);
